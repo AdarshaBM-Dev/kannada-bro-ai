@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ಕನ್ನಡಬ್ರೋ.ai - ನಿನ್ನ AI ಗೆಳೆಯ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans Kannada', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #ff6b6b; padding: 15px; text-align: center;
+            color: white; font-size: 20px; font-weight: bold;
+        }
+        .chat-container {
+            flex: 1; overflow-y: auto; padding: 20px; max-width: 600px;
+            margin: 0 auto; width: 100%;
+        }
+        .message {
+            margin: 10px 0; padding: 12px 18px; border-radius: 20px;
+            max-width: 80%; word-wrap: break-word;
+        }
+        .user { 
+            background: #4ecdc4; color: white; margin-left: auto; 
+            text-align: right;
+        }
+        .ai { 
+            background: white; color: #333; margin-right: auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-area {
+            padding: 20px; background: white; border-top: 1px solid #eee;
+        }
+        input {
+            width: 80%; padding: 15px; border: 2px solid #ddd;
+            border-radius: 25px; font-size: 16px; outline: none;
+        }
+        input:focus { border-color: #ff6b6b; }
+        button {
+            width: 18%; padding: 15px; margin-left: 5px;
+            background: #ff6b6b; color: white; border: none;
+            border-radius: 25px; font-size: 16px; cursor: pointer;
+        }
+        button:hover { background: #ff5252; }
+        .voice-btn { 
+            background: #4ecdc4; width: 50px; margin-left: 5px;
+            font-size: 20px;
+        }
+        .loading { text-align: center; color: #666; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header">👋 ಕನ್ನಡಬ್ರೋ.ai - ನಿನ್ನ AI ಗೆಳೆಯ!</div>
+    
+    <div class="chat-container" id="chatContainer">
+        <div class="message ai">
+            ಹಾಯ್ ಬ್ರೋ! 👋 ನಾನು ಕನ್ನಡಬ್ರೋ. ನಿನ್ನ ಗೆಳೆಯ ಆಗಿ ಮಾತಾಡೋಕೆ ಬಂದಿದ್ದೇನೆ. 
+            ಏನು ಮಾತಾಡೋಣ? 😎
+        </div>
+    </div>
+    
+    <div class="input-area">
+        <input id="messageInput" placeholder="ಕನ್ನಡದಲ್ಲಿ ಮಾತಾಡು... ✍️" />
+        <button onclick="sendMessage()">ಅಂಡ್ 🚀</button>
+        <button class="voice-btn" onclick="toggleVoice()">🎤</button>
+    </div>
+
+    <script>
+        // FREE Gemini API - Get key: aistudio.google.com/app/apikey
+        const GEMINI_API_KEY = 'AIzaSyC...' ; // ← PUT YOUR FREE KEY HERE
+        
+        let messages = [];
+        let isVoiceMode = false;
+        let recognition;
+
+        // 1. MAIN CHAT FUNCTION
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const userMessage = input.value.trim();
+            if (!userMessage) return;
+
+            // Add user message
+            addMessage(userMessage, 'user');
+            input.value = '';
+
+            // Show typing...
+            addMessage('ಥಿಂಕ್ ಮಾಡ್ತಿದ್ದೇನೆ...', 'ai loading');
+
+            try {
+                const aiReply = await getKannadaReply(userMessage);
+                // Remove typing message
+                document.querySelector('.loading').remove();
+                addMessage(aiReply, 'ai');
+                
+                // Auto-read reply
+                if (isVoiceMode) speak(aiReply);
+            } catch (error) {
+                addMessage('ಏನೋ ತೊಂದರೆ ಆಯ್ತು! ಮತ್ತೊಮ್ಮೆ ಟ್ರೈ ಮಾಡು 😅', 'ai');
+            }
+        }
+
+        // 2. AI REPLY (Gemini - Best for Kannada)
+        async function getKannadaReply(userMessage) {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `ನೀನು ಕನ್ನಡದ ಗೆಳೆಯ AI. ಸಹಜ, ಸ್ನೇಹಪೂರ್ಣ, ಉತ್ಸಾಹಿ. 
+                            User: ${userMessage}
+                            Reply in Kannada only:`
+                        }]
+                    }]
+                })
+            });
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // 3. Add message to chat
+        function addMessage(text, type) {
+            const chat = document.getElementById('chatContainer');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+            msgDiv.innerHTML = text;
+            chat.appendChild(msgDiv);
+            chat.scrollTop = chat.scrollHeight;
+            
+            if (type === 'ai loading') msgDiv.classList.add('loading');
+        }
+
+        // 4. VOICE SPEAK
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'kn-IN';
+            utterance.rate = 0.9;
+            speechSynthesis.speak(utterance);
+        }
+
+        // 5. VOICE INPUT
+        function toggleVoice() {
+            isVoiceMode = !isVoiceMode;
+            const btn = event.target;
+            btn.textContent = isVoiceMode ? '🔇' : '🎤';
+            
+            if (isVoiceMode) startVoiceRecognition();
+        }
+
+        function startVoiceRecognition() {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'kn-IN';
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('messageInput').value = transcript;
+                sendMessage();
+            };
+            recognition.start();
+        }
+
+        // Enter key support
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Welcome message
+        speak('ಹಾಯ್ ಬ್ರೋ! ನಾನು ಕನ್ನಡಬ್ರೋ!');
+    </script>
+</body>
+</html>
