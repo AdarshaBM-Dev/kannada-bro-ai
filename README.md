@@ -12,6 +12,6 @@
 - ✅ **Free** Forever
 
 ## 🚀 Live Demo
-[[https://YOURNAME.github.io/kannada-bro-ai](https://YOURNAME.github.io/kannada-bro-ai](https://github.com/AdarshaBM-Dev/kannada-bro-ai.git))
+(https://github.com/AdarshaBM-Dev/kannada-bro-ai.git))
 
 ## 📱 Install (1 Click)
